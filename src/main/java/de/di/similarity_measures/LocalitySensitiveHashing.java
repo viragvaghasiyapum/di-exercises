@@ -68,7 +68,17 @@ public class LocalitySensitiveHashing implements SimilarityMeasure {
 
         //                                                                                                            //
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+        for (int i = 0; i < this.minHashFunctions.size(); i++) {
+            signature1[i] = minHashFunctions.get(i).apply(strings1);
+            signature2[i] = minHashFunctions.get(i).apply(strings2);
+        }
+        int count = 0;
+        for (int i = 0; i < minHashFunctions.size(); i++) {
+            if (signature1[i].equals(signature2[i])) {
+                count++;
+            }
+        }
+        lshJaccard = (double) count / minHashFunctions.size();
         return lshJaccard;
     }
 }
