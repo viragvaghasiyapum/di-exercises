@@ -38,5 +38,7 @@ public class MinHash {
                 i++;
             }
         };
+    public String apply(String[] tokens) {
+        return null;
     }
 }
