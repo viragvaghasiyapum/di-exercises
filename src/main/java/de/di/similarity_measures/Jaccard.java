@@ -103,6 +103,6 @@ public class Jaccard implements SimilarityMeasure {
 
             jaccardSimilarity = (double) intersection.size() / union.size();
         }
-        return jaccardSimilarity;
+        return Math.abs(jaccardSimilarity);
     }
 }

@@ -3,8 +3,7 @@ package de.di.similarity_measures;
 import de.di.similarity_measures.helper.MinHash;
 import de.di.similarity_measures.helper.Tokenizer;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class LocalitySensitiveHashing implements SimilarityMeasure {
 
@@ -56,19 +55,59 @@ public class LocalitySensitiveHashing implements SimilarityMeasure {
     public double calculate(final String[] strings1, final String[] strings2) {
         double lshJaccard = 0;
 
-        String[] signature1 = new String[this.minHashFunctions.size()];
-        String[] signature2 = new String[this.minHashFunctions.size()];
+//        System.out.println(strings1.length);
 
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //                                      DATA INTEGRATION ASSIGNMENT                                           //
-        // Calculate the two signatures by using the internal MinHash functions. Then, use the signatures to          //
-        // approximate the Jaccard similarity.                                                                        //
+        Set<String> tokens1 = tokenize(strings1);
+        Set<String> tokens2 = tokenize(strings2);
 
+//        System.out.println(tokens1.size());
 
+        int[] minHash1 = computeMinHashSignature(tokens1);
+        int[] minHash2 = computeMinHashSignature(tokens2);
 
-        //                                                                                                            //
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+        lshJaccard = calculateJaccardSimilarity(minHash1, minHash2);
         return lshJaccard;
+    }
+
+    private Set<String> tokenize(String[] array) {
+        Set<String> tokens = new HashSet<>();
+        for (String str : array) {
+            String[] splitTokens = str.split("\\s+"); // Simple whitespace tokenization
+            tokens.addAll(Arrays.asList(splitTokens));
+        }
+        return tokens;
+    }
+
+    private int[] computeMinHashSignature(Set<String> tokens) {
+        int[] minHashSignature = new int[this.minHashFunctions.size()];
+        Arrays.fill(minHashSignature, Integer.MAX_VALUE);
+
+        for (String token : tokens) {
+            for (int i = 0; i < this.minHashFunctions.size(); i++) {
+                int hashValue = hash(i, token);
+                if (hashValue < minHashSignature[i]) {
+                    minHashSignature[i] = hashValue;
+                }
+            }
+        }
+        return minHashSignature;
+    }
+
+    private int hash(int i, String token) {
+        Random random = new Random(i);
+        int a = random.nextInt();
+        int b = random.nextInt();
+        int prime = 2147483647; // A large prime number
+        return Math.abs((a * token.hashCode() + b) % prime);
+    }
+
+    private double calculateJaccardSimilarity(int[] minHash1, int[] minHash2) {
+        int identicalMinHashes = 0;
+        for (int i = 0; i < this.minHashFunctions.size(); i++) {
+            if (minHash1[i] == minHash2[i]) {
+                identicalMinHashes++;
+            }
+        }
+        return (double) identicalMinHashes / this.minHashFunctions.size();
     }
 }
