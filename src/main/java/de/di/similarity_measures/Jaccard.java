@@ -64,30 +64,7 @@ public class Jaccard implements SimilarityMeasure {
         Arrays.sort(strings2);
 
         if (bagSemantics) {
-            Map<String, Integer> countElem1 = new HashMap<>();
-            Map<String, Integer> countElem2 = new HashMap<>();
-            ArrayList<String> intersection = new ArrayList<>();
-
-            // counting occurrences of each element in strings1 array
-            for (String token : strings1) {
-                countElem1.put(token, countElem1.containsKey(token) ? countElem1.get(token) + 1 : 1);
-            }
-            // counting occurrences of each element in strings2 array
-            for (String token : strings2) {
-                countElem2.put(token, countElem2.containsKey(token) ? countElem2.get(token) + 1 : 1);
-            }
-            // creating intersection array with duplicate elements
-            for (Map.Entry<String, Integer> entry : countElem1.entrySet()) {
-                String key = entry.getKey();
-                if (!countElem2.containsKey(key)) {
-                    continue;
-                }
-                int occurrence = Math.min(entry.getValue(), countElem2.get(key));
-                while(occurrence > 0) {
-                    intersection.add(key);
-                    --occurrence;
-                }
-            }
+            ArrayList<String> intersection = getIntersection(strings1, strings2);
             jaccardSimilarity = (double) intersection.size() / (strings1.length + strings2.length);
         } else {
             Set<String> set1 = new HashSet<>(Arrays.asList(strings1));
@@ -104,5 +81,34 @@ public class Jaccard implements SimilarityMeasure {
             jaccardSimilarity = (double) intersection.size() / union.size();
         }
         return Math.abs(jaccardSimilarity);
+    }
+
+    private ArrayList<String> getIntersection(String[] strings1, String[] strings2) {
+        Map<String, Integer> countElem1 = getElementCountMap(strings1);
+        Map<String, Integer> countElem2 = getElementCountMap(strings2);
+        ArrayList<String> intersection = new ArrayList<>();
+
+        // creating intersection array with duplicate elements
+        for (Map.Entry<String, Integer> entry : countElem1.entrySet()) {
+            String key = entry.getKey();
+            if (!countElem2.containsKey(key)) {
+                continue;
+            }
+            int occurrence = Math.min(entry.getValue(), countElem2.get(key));
+            while(occurrence > 0) {
+                intersection.add(key);
+                --occurrence;
+            }
+        }
+        return intersection;
+    }
+
+    // counting occurrences of each element in strings array
+    private Map<String, Integer> getElementCountMap(String[] strings) {
+        Map<String, Integer> countElem = new HashMap<>();
+        for (String token : strings) {
+            countElem.put(token, countElem.containsKey(token) ? countElem.get(token) + 1 : 1);
+        }
+        return countElem;
     }
 }
