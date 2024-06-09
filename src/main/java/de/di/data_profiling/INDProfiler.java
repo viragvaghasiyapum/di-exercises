@@ -1,7 +1,5 @@
 package de.di.data_profiling;
 
-import com.opencsv.CSVReader;
-import com.opencsv.exceptions.CsvValidationException;
 import de.di.Relation;
 import de.di.data_profiling.structures.AttributeList;
 import de.di.data_profiling.structures.IND;
@@ -22,7 +20,6 @@ public class INDProfiler {
         if (discoverNary) {
              throw new RuntimeException("nary discovery is not implemented!");
         }
-
         List<IND> inclusionDependencies = new ArrayList<>();
         for (Relation table1 : relations) {
             for (Relation table2 : relations) {
@@ -31,10 +28,15 @@ public class INDProfiler {
                 }
             }
         }
-        System.out.println("Non-Trivial Unary Inclusion Dependencies ::");
         return inclusionDependencies;
     }
 
+    /**
+     * Processes inclusion dependencies between two given relations
+     * @param r1 Relation 1
+     * @param r2 Relation 2
+     * @param inclusionDependencies Unary inclusion dependencies
+     */
     private void discoverUnaryInclusionDependencies (Relation r1, Relation r2, List<IND> inclusionDependencies) {
 
         List<String> r1Attributes = Arrays.asList(r1.getAttributes());
@@ -51,6 +53,12 @@ public class INDProfiler {
         }
     }
 
+    /**
+     * Gets column values for an attribute in given relation
+     * @param r Relation
+     * @param columnName Attribute name
+     * @return Set<String> columnValues
+     */
     private Set<String> getColumnValues(Relation r, String columnName) {
         Set<String> columnValues = new HashSet<>();
         String[] attributes = r.getAttributes();
