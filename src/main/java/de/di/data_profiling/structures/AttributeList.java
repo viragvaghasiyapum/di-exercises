@@ -80,6 +80,18 @@ public class AttributeList {
     }
 
     /**
+     * Removes the specified attribute from this attribute list and returns a new attribute list.
+     * @param attribute The attribute to be removed.
+     * @return A new attribute list without the specified attribute.
+     */
+    public AttributeList remove(int attribute) {
+        int[] newAttributes = Arrays.stream(this.attributes)
+                .filter(attr -> attr != attribute)
+                .toArray();
+        return new AttributeList(newAttributes);
+    }
+
+    /**
      * Checks weather this attribute list has the same #attributes - 1 long prefix than the provided attribute list.
      * @param other The other attribute list to check the prefix with.
      * @return true if both attribute lists have the same #attributes - 1 long prefix.
