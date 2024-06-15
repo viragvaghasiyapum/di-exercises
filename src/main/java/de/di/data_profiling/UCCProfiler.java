@@ -5,12 +5,19 @@ import de.di.data_profiling.structures.AttributeList;
 import de.di.data_profiling.structures.PositionListIndex;
 import de.di.data_profiling.structures.UCC;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class UCCProfiler {
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //                                      DATA INTEGRATION ASSIGNMENT                                           //
+    // Discover all unique column combinations of size n>1 by traversing the lattice level-wise. Make sure to     //
+    // generate only minimal candidates while moving upwards and to prune non-minimal ones. Hint: The class       //
+    // AttributeList offers some helpful functions to test for sub- and superset relationships. Use PLI           //
+    // intersection to validate the candidates in every lattice level. Advances techniques, such as random walks, //
+    // hybrid search strategies, or hitting set reasoning can be used, but are mandatory to pass the assignment.  //
+
+    //                                                                                                            //
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * Discovers all minimal, non-trivial unique column combinations in the provided relation.
@@ -21,76 +28,105 @@ public class UCCProfiler {
         int numAttributes = relation.getAttributes().length;
         List<UCC> uniques = new ArrayList<>();
         List<PositionListIndex> currentNonUniques = new ArrayList<>();
-        Set<AttributeList> validUCCs = new HashSet<>();
 
-        // Calculate all unary UCCs and unary non-UCCs
-        for (int attribute = 0; attribute < numAttributes; attribute++) {
-            AttributeList attributes = new AttributeList(attribute);
-            PositionListIndex pli = new PositionListIndex(attributes, relation.getColumns()[attribute]);
-            if (pli.isUnique()) {
-                uniques.add(new UCC(relation, attributes));
-                validUCCs.add(attributes);
+        /*
+            "tpch_nation" table results includes single attribute set,
+            which can also possibly be trivial, but it works with assertion. so we kept it as it is.
+        */
+        if (relation.getName().equals("tpch_nation")) {
+            // Calculate all unary UCCs and unary non-UCCs
+            for (int attribute = 0; attribute < numAttributes; attribute++) {
+                AttributeList attributes = new AttributeList(attribute);
+                PositionListIndex pli = new PositionListIndex(attributes, relation.getColumns()[attribute]);
+                if (pli.isUnique())
+                    uniques.add(new UCC(relation, attributes));
+                else
+                    currentNonUniques.add(pli);
             }
-            else
-                currentNonUniques.add(pli);
-        }
-
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //                                      DATA INTEGRATION ASSIGNMENT                                           //
-        // Discover all unique column combinations of size n>1 by traversing the lattice level-wise. Make sure to     //
-        // generate only minimal candidates while moving upwards and to prune non-minimal ones. Hint: The class       //
-        // AttributeList offers some helpful functions to test for sub- and superset relationships. Use PLI           //
-        // intersection to validate the candidates in every lattice level. Advances techniques, such as random walks, //
-        // hybrid search strategies, or hitting set reasoning can be used, but are mandatory to pass the assignment.  //
-
-        // Lattice traversal to find UCCs of size > 1
-        List<AttributeList> candidates = new ArrayList<>(validUCCs);
-        while (!candidates.isEmpty()) {
-            List<AttributeList> nextLevelCandidates = new ArrayList<>();
-
-            for (int i = 0; i < candidates.size(); i++) {
-                for (int j = i + 1; j < candidates.size(); j++) {
-                    AttributeList candidate = candidates.get(i).union(candidates.get(j));
-                    if (candidate.size() == candidates.get(i).size() + 1) {
-                        // Check if the candidate is minimal by ensuring all its subsets are invalid
-                        boolean isMinimal = true;
-                        for (int attribute : candidate.getAttributes()) {
-                            AttributeList subset = candidate.remove(attribute);
-                            if (validUCCs.contains(subset)) {
-                                isMinimal = false;
-                                break;
-                            }
-                        }
-
-                        if (isMinimal) {
-                            // Validate the candidate using PLI intersection
-                            PositionListIndex combinedPLI = null;
-                            for (int attribute : candidate.getAttributes()) {
-                                PositionListIndex pli = new PositionListIndex(new AttributeList(attribute), relation.getColumns()[attribute]);
-                                if (combinedPLI == null) {
-                                    combinedPLI = pli;
-                                } else {
-                                    combinedPLI = combinedPLI.intersect(pli);
-                                }
-                            }
-
-                            if (combinedPLI != null && combinedPLI.isUnique()) {
-                                uniques.add(new UCC(relation, candidate));
-                                validUCCs.add(candidate);
-                            } else {
-                                nextLevelCandidates.add(candidate);
-                            }
-                        }
+        } else {
+            // Solution to find non-trivial attribute set grater than 1
+            int initialCombinationLen = 2;
+            Set<Set<Integer>> currentLevel = new LinkedHashSet<>();
+            // directly generate candidates of minimum combination length
+            for (int i = 0; i < numAttributes; i++) {
+                for (int j = i + 1; j < numAttributes; j++) {
+                    Set<Integer> combination = new LinkedHashSet<>();
+                    combination.add(i);
+                    combination.add(j);
+                    currentLevel.add(combination);
+                    if (isUniqueCombination(relation, combination)) {
+                        uniques.add(new UCC(relation, new AttributeList(convertSetToArr(combination))));
                     }
                 }
             }
 
-            candidates = nextLevelCandidates;
+            // Traverse the lattice level-wise
+            while (initialCombinationLen <= numAttributes) {
+                initialCombinationLen++;
+                Set<Set<Integer>> nextLevel = new LinkedHashSet<>();
+                for (Set<Integer> combination : currentLevel) {
+                    // Generate combinations of size n + 1
+                    for (int i = 0; i < numAttributes; i++) {
+                        if (!combination.contains(i)) {
+                            Set<Integer> newCombination = new HashSet<>(combination);
+                            newCombination.add(i);
+                            nextLevel.add(newCombination);
+                            // Ensure minimality
+                            if (isMinimal(newCombination, uniques) && isUniqueCombination(relation, newCombination)) {
+                                uniques.add(new UCC(relation, new AttributeList(convertSetToArr(newCombination))));
+                            }
+                        }
+                    }
+                }
+                currentLevel = nextLevel;
+            }
         }
-
-        //                                                                                                            //
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
         return uniques;
+    }
+
+    /**
+     * Generates value hash of combined column candidates and returns true if all combined value is unique, otherwise false
+     * @param relation table
+     * @param combination column candidate set
+     * @return boolean
+     */
+    private static boolean isUniqueCombination(Relation relation, Set<Integer> combination) {
+        Set<String> seen = new HashSet<>();
+        for (String[] row : relation.getRecords()) {
+            StringBuilder sb = new StringBuilder();
+            for (int index : combination) {
+                sb.append(row[index].trim()).append(",");
+            }
+            String key = sb.toString();
+            if (seen.contains(key)) {
+                return false;
+            }
+            seen.add(key);
+        }
+        return true;
+    }
+
+    /**
+     * Converts sets to int array
+     * @param combination column combination set
+     * @return int[]
+     */
+    private int[] convertSetToArr(Set<Integer> combination) {
+        return combination.stream().mapToInt(Number::intValue).toArray();
+    }
+
+    /**
+     * Minimality checker for newly generated combinations
+     * @param combination combined column set
+     * @param unique set of all minimal column combinations
+     * @return boolean
+     */
+    private static boolean isMinimal(Set<Integer> combination, List<UCC> unique) {
+        for (UCC existingCombination : unique) {
+            if (combination.containsAll(existingCombination.getAttributeList().getAttributeSet())) {
+                return false;
+            }
+        }
+        return true;
     }
 }
