@@ -23,9 +23,9 @@ public class INDProfiler {
         List<IND> inclusionDependencies = new ArrayList<>();
         for (Relation table1 : relations) {
             for (Relation table2 : relations) {
-                if (!table1.getName().equals(table2.getName())) {
+//                if (!table1.getName().equals(table2.getName())) {
                     discoverUnaryInclusionDependencies(table1, table2, inclusionDependencies);
-                }
+//                }
             }
         }
         return inclusionDependencies;
@@ -45,6 +45,9 @@ public class INDProfiler {
         for (String attr1 : r1Attributes) {
             Set<String> attr1Values = getColumnValues(r1, attr1);
             for (String attr2 : r2Attributes) {
+                if (r1.getName().equals(r2.getName()) && attr1.equals(attr2)) {
+                    continue;
+                }
                 Set<String> attr2Values = getColumnValues(r2, attr2);
                 if (attr2Values.containsAll(attr1Values)) {
                     inclusionDependencies.add(new IND(r1, r1Attributes.indexOf(attr1), r2, r2Attributes.indexOf(attr2)));
