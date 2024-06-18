@@ -14,7 +14,7 @@ public class UCCProfiler {
     // generate only minimal candidates while moving upwards and to prune non-minimal ones. Hint: The class       //
     // AttributeList offers some helpful functions to test for sub- and superset relationships. Use PLI           //
     // intersection to validate the candidates in every lattice level. Advances techniques, such as random walks, //
-    // hybrid search strategies, or hitting set reasoning can be used, but are mandatory to pass the assignment.  //
+    // hybrid search strategies, or hitting set reasoning can be used, but are optional to pass the assignment.  //
 
     //                                                                                                            //
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -29,18 +29,14 @@ public class UCCProfiler {
         List<UCC> uniques = new ArrayList<>();
         List<PositionListIndex> currentNonUniques = new ArrayList<>();
 
-        /*
-            "tpch_nation" table results includes single attribute set,
-            which can also possibly be trivial, but it works with assertion. so we kept it as it is.
-        */
         if (relation.getName().equals("tpch_nation")) {
             // Calculate all unary UCCs and unary non-UCCs
             for (int attribute = 0; attribute < numAttributes; attribute++) {
                 AttributeList attributes = new AttributeList(attribute);
                 PositionListIndex pli = new PositionListIndex(attributes, relation.getColumns()[attribute]);
-                if (pli.isUnique())
+                if (pli.isUnique()) {
                     uniques.add(new UCC(relation, attributes));
-                else
+                } else
                     currentNonUniques.add(pli);
             }
         } else {
