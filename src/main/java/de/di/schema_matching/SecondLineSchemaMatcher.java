@@ -1,9 +1,8 @@
 package de.di.schema_matching;
 
+import de.di.schema_matching.structures.HungarianAlgorithm;
 import de.di.schema_matching.structures.CorrespondenceMatrix;
 import de.di.schema_matching.structures.SimilarityMatrix;
-
-import java.util.Arrays;
 
 public class SecondLineSchemaMatcher {
 
@@ -15,18 +14,23 @@ public class SecondLineSchemaMatcher {
      */
     public CorrespondenceMatrix match(SimilarityMatrix similarityMatrix) {
         double[][] simMatrix = similarityMatrix.getMatrix();
+        int rows = simMatrix.length;
+        int cols = simMatrix[0].length;
 
-        int[][] corrMatrix = null;
+        // Create a cost matrix (we want to maximize similarity, so we'll minimize 1 - similarity)
+        double[][] costMatrix = new double[rows][cols];
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                costMatrix[i][j] = 1 - simMatrix[i][j];
+            }
+        }
 
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //                                      DATA INTEGRATION ASSIGNMENT                                           //
-        // Translate the similarity matrix into a binary correlation matrix by implementing either the StableMarriage //
-        // algorithm or the Hungarian method.                                                                         //
+        // Apply the Hungarian algorithm
+        HungarianAlgorithm ha = new HungarianAlgorithm(costMatrix);
+        int[] assignments = ha.execute();
 
-
-
-        //                                                                                                            //
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Convert the assignments to a correspondence matrix
+        int[][] corrMatrix = assignmentArray2correlationMatrix(assignments, simMatrix);
 
         return new CorrespondenceMatrix(corrMatrix, similarityMatrix.getSourceRelation(), similarityMatrix.getTargetRelation());
     }
