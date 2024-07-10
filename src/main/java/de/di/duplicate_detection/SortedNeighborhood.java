@@ -41,20 +41,26 @@ public class SortedNeighborhood {
         Set<Duplicate> duplicates = new HashSet<>();
 
         Record[] records = new Record[relation.getRecords().length];
-        for (int i = 0; i < relation.getRecords().length; i++)
+        for (int i = 0; i < relation.getRecords().length; i++) {
             records[i] = new Record(i, relation.getRecords()[i]);
+        }
 
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //                                      DATA INTEGRATION ASSIGNMENT                                           //
-        // Discover all duplicates in the provided relation. A duplicate stores the attribute indexes that refer to   //
-        // matching records. Use the provided sortingKeys, windowSize, and recordComparator to implement the Sorted   //
-        // Neighborhood Method correctly.                                                                             //
+        for (int sortingKey : sortingKeys) {
+            // Sort the records based on the current sorting key
+            Arrays.sort(records, Comparator.comparing(r -> r.getValues()[sortingKey]));
 
-
-
-        //                                                                                                            //
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+            // Apply the sliding window
+            for (int i = 0; i < records.length - windowSize + 1; i++) {
+                for (int j = i + 1; j < i + windowSize && j < records.length; j++) {
+                    Record record1 = records[i];
+                    Record record2 = records[j];
+                    double similarity = recordComparator.compare(record1.getValues(), record2.getValues());
+                    if (recordComparator.isDuplicate(similarity)) {
+                        duplicates.add(new Duplicate(record1.getIndex(), record2.getIndex(), similarity, relation));
+                    }
+                }
+            }
+        }
         return duplicates;
     }
 
@@ -67,20 +73,32 @@ public class SortedNeighborhood {
         List<AttrSimWeight> attrSimWeights = new ArrayList<>(relation.getAttributes().length);
         double threshold = 0.0;
 
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //                                      DATA INTEGRATION ASSIGNMENT                                           //
-        // Define the AttrSimWeight objects for a RecordComparator that matches the records of the provided relation  //
-        // possibly well, i.e., duplicate should receive possibly high similarity scores and non-duplicates should    //
-        // receive possibly low scores. In other words, put together a possibly effective ensemble of the already     //
-        // implemented similarity functions for duplicate detections runs on the provided relation. Side note: This   //
-        // is usually learned by machine learning algorithms, but a creative, heuristics-based solution is sufficient //
-        // here.                                                                                                      //
+        for (int i = 0; i < relation.getAttributes().length; i++) {
+            double avgLength = calculateAverageLength(relation, i);
 
-
-
-        //                                                                                                            //
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+            if (avgLength < 10) {
+                // For shorter strings, use Levenshtein
+                attrSimWeights.add(new AttrSimWeight(i, new Levenshtein(true), 0.1));
+            } else {
+                // For longer strings, use Jaccard
+                attrSimWeights.add(new AttrSimWeight(i, new Jaccard(new Tokenizer(4, true), false), 0.2));
+            }
+            // Increase the threshold based on the number of attributes
+            threshold += 0.8 / relation.getAttributes().length;
+        }
         return new RecordComparator(attrSimWeights, threshold);
+    }
+
+    private static double calculateAverageLength(Relation relation, int attributeIndex) {
+        double totalLength = 0;
+        int count = 0;
+        for (String[] record : relation.getRecords()) {
+            String value = record[attributeIndex];
+            if (value != null) {
+                totalLength += value.length();
+                count++;
+            }
+        }
+        return count > 0 ? totalLength / count : 0;
     }
 }

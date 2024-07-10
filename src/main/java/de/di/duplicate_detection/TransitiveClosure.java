@@ -26,14 +26,34 @@ public class TransitiveClosure {
         Relation relation = duplicates.iterator().next().getRelation();
         int numRecords = relation.getRecords().length;
 
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //                                      DATA INTEGRATION ASSIGNMENT                                           //
-        // Calculate the transitive closure over the provided attributes using Warshall's (or Warren's) algorithm.    //
+        // Create an adjacency matrix to represent the duplicate relationships
+        boolean[][] adjacencyMatrix = new boolean[numRecords][numRecords];
 
+        // Populate the adjacency matrix with input duplicates
+        for (Duplicate duplicate : duplicates) {
+            int record1 = duplicate.getIndex1();
+            int record2 = duplicate.getIndex2();
+            adjacencyMatrix[record1][record2] = true;
+            adjacencyMatrix[record2][record1] = true;  // Duplicate relationship is commutative
+        }
 
+        // Floyd-Warshall algorithm for transitive closure
+        for (int k = 0; k < numRecords; k++) {
+            for (int i = 0; i < numRecords; i++) {
+                for (int j = 0; j < numRecords; j++) {
+                    adjacencyMatrix[i][j] |= (adjacencyMatrix[i][k] && adjacencyMatrix[k][j]);
+                }
+            }
+        }
 
-        //                                                                                                            //
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Convert the adjacency matrix back to Duplicate objects
+        for (int i = 0; i < numRecords; i++) {
+            for (int j = i + 1; j < numRecords; j++) {  // Start from i+1 to avoid identity duplicates
+                if (adjacencyMatrix[i][j]) {
+                    closedDuplicates.add(new Duplicate(i, j,adjacencyMatrix[i][j] ? 1.0 : 0.0, relation));
+                }
+            }
+        }
 
         return closedDuplicates;
     }

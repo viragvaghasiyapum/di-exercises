@@ -48,19 +48,19 @@ public class RecordComparator {
      */
     public double compare(String[] tuple1, String[] tuple2) {
         double recordSimilarity = 0;
+        double totalWeight = 0;
 
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //                                      DATA INTEGRATION ASSIGNMENT                                           //
-        // Compare the two tuples with the similarity functions specified by the internal AttrSimWeight objects.      //
-        // To calculate the overall tuple similarity, calculate the weighted average similarity of all individual     //
-        // attribute similarities; the weights are also stored in the internal AttrSimWeight objects.                 //
+        for (AttrSimWeight asw : attrSimWeights) {
+            int attrIndex = asw.getAttribute();
+            if (attrIndex < tuple1.length && attrIndex < tuple2.length) {
+                double similarity = asw.getSimilarityMeasure().calculate(tuple1[attrIndex], tuple2[attrIndex]);
+                double weight = asw.getWeight();
+                recordSimilarity += similarity * weight;
+                totalWeight += weight;
+            }
+        }
 
-
-
-        //                                                                                                            //
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-        return recordSimilarity;
+        return totalWeight > 0 ? recordSimilarity / totalWeight : 0;
     }
 
     /**
